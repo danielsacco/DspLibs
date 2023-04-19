@@ -9,7 +9,6 @@ public:
   void setSampleRate(double sampleRate) ;
   void setAttack(double attackMs);
   void setRelease(double releaseMs);
-  //virtual ~Detector() {};
 
 protected:
   void calculateConstants();

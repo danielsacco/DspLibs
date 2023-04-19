@@ -7,13 +7,6 @@
 * http://c4dm.eecs.qmul.ac.uk/audioengineering/compressors/documents/report.pdf page 32
 * Udo Zolzer DAFX 2nd Ed. page 230
 */
-//DecoupledPeakDetector::DecoupledPeakDetector(double sampleRate, double attackMs, double releaseMs)
-//  : sampleRate{sampleRate}
-//{
-//
-//}
-
-
 double DecoupledPeakDetector::ProcessSample(double input)
 {
   const double x = std::abs(input);
@@ -22,12 +15,18 @@ double DecoupledPeakDetector::ProcessSample(double input)
 
   lastOutput += k * (x - lastOutput);
 
+  if (isnan(lastOutput)) {
+    lastOutput = 0.;
+  }
+
   return lastOutput;
 }
 
 
 
-
+/*
+* Base detector class.
+*/
 Detector::Detector(double sampleRate, double attackMs, double releaseMs)
   : sampleRate{ sampleRate }, attackMs{ attackMs }, releaseMs{ releaseMs }
 {
