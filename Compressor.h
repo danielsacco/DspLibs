@@ -6,7 +6,7 @@ class Compressor {
 public:
   Compressor(double threshold, double ratio, double kneeWidth, double sampleRate, double attackMs, double releaseMs);
 
-  void ProcessBlock(double* input, double* sidechain, double* output, double* grMeter, double* scMeter, double* outMeter, int nFrames);
+  void ProcessBlock(double* input, double* sidechain, double* output, double* grMeter, int nFrames);
 
   void SetSampleRate(double sampleRate);
   void SetAttack(double attackMs);
@@ -22,7 +22,5 @@ private:
   double kneeWidth;
 
   DecoupledPeakDetector grDetector;
-  DecoupledPeakDetector scDetector;
-  DecoupledPeakDetector outDetector;
 
 };
