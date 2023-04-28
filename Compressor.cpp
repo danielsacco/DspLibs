@@ -3,54 +3,41 @@
 #include <vector>
 
 Compressor::Compressor(double threshold, double ratio, double kneeWidth, double sampleRate, double attackMs, double releaseMs)
-  : threshold {threshold}
-  , ratio {ratio}
-  , kneeWidth{ kneeWidth }
-  , grDetector{ sampleRate, attackMs, releaseMs }
+  : grDetector{ sampleRate, attackMs, releaseMs }
+  , reductionComputer { threshold, ratio, kneeWidth }
 {
 }
 
-
-void Compressor::ProcessBlock(double* input, double* sidechain, double* output, double* grMeter, int nFrames)
+void Compressor::ProcessBlock(double* input, double* sidechain, double* output, double* vcaGain, int nFrames)
 {
   std::vector<double> localBuffer(nFrames);
 
-  // Log of sidechain signal
+  // Log of control (sidechain or input) signal
+  double* controlSignal = sidechain ? sidechain : input;
   for (int s = 0; s < nFrames; s++) {
-    auto logSample = AmpToDB(input[s]);
-    localBuffer[s] = logSample;
+    localBuffer[s] = AmpToDB(controlSignal[s]);
   }
 
-  // Pass log of sidechain signal through gain curve
-  // Here we have the sidechain signal converted to dBs between -infinite and zero (or greater)
+  // Pass log of control signal through gain curve
+  // Here we have the control signal converted to dBs between -infinite and zero (or greater)
   for (int s = 0; s < nFrames; s++) {
-    double sample = localBuffer[s];
-
-    if (sample > threshold)
-    {
-      double delta = sample - threshold;
-      grMeter[s] = -(delta * (1. - 1. / ratio));   // Gain Reduction in dBs
-    }
-    else
-    {
-      grMeter[s] = 0;                             // No reduction
-    }
+    vcaGain[s] = reductionComputer.Compute(localBuffer[s]);
   }
 
-  // Back to linear for attacking the detector
+  // Back to linear for feeding the detector
   for (int s = 0; s < nFrames; s++) {
-    grMeter[s] = DBToAmp(grMeter[s]);
+    vcaGain[s] = DBToAmp(vcaGain[s]);
   }
 
   // Attack/Release post gain curve
   for (int s = 0; s < nFrames; s++) {
     // Here we have a gain factor between 0dB and -inf, so we need to invert the input to the detector and its output.
-    grMeter[s] = 1. - grDetector.ProcessSample(1. - grMeter[s]);
+    vcaGain[s] = 1. - grDetector.ProcessSample(1. - vcaGain[s]);
   }
 
   // Apply the gain profile
   for (int s = 0; s < nFrames; s++) {
-    output[s] = input[s] * grMeter[s];
+    output[s] = input[s] * vcaGain[s];
   }
 
 }
@@ -72,15 +59,15 @@ void Compressor::SetRelease(double releaseMs)
 
 void Compressor::SetThreshold(double threshold)
 {
-  Compressor::threshold = threshold;
+  reductionComputer.SetThreshold(threshold);
 }
 
 void Compressor::SetRatio(double ratio)
 {
-  Compressor::ratio = ratio;
+  reductionComputer.SetRatio(ratio);
 }
 
 void Compressor::SetKneeWidth(double kneeWidth)
 {
-  Compressor::kneeWidth = kneeWidth;
+  reductionComputer.SetKneeWidth(kneeWidth);
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <../DspLibs/Detectors.h>
+#include <../DspLibs/GainReductionComputer.h>
 
 class Compressor {
 public:
@@ -17,10 +18,7 @@ public:
   void SetKneeWidth(double kneeWidth);
 
 private:
-  double threshold;
-  double ratio;
-  double kneeWidth;
-
   DecoupledPeakDetector grDetector;
-
+  GainReductionComputer reductionComputer;
 };
+
